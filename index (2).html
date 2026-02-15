@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АСО «КОНТУР-С» | СУ СК РОССИЙСКОЙ ФЕДЕРАЦИИ</title>
+    <style>
+        :root {
+            --bg-dark: #020408;
+            --bg-panel: #0a0d14;
+            --accent-red: #8e1b1b;
+            --gold: #b2945e;
+            --text-main: #d1d5db;
+            --border: #1f2937;
+        }
+
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; background: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; height: 100vh; overflow: hidden; }
+
+        .grid-overlay { position: fixed; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 40px 40px; opacity: 0.1; z-index: -1; }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg-dark); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--bg-panel); border: 1px solid var(--gold); padding: 50px; width: 500px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .main-logo { width: 140px; margin-bottom: 25px; }
+        
+        .field { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; margin-bottom: 12px; border-radius: 2px; outline: none; font-family: 'Courier New', monospace; font-size: 0.85rem; }
+        .btn-main { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; }
+        .btn-main:hover { background: #fff; }
+
+        /* --- APP LAYOUT --- */
+        #app-shell { display: grid; grid-template-columns: 300px 1fr 380px; grid-template-rows: 75px 1fr; height: 100vh; display: none; }
+
+        header { grid-column: 1 / 4; background: #000; border-bottom: 2px solid var(--gold); display: flex; align-items: center; padding: 0 25px; justify-content: space-between; }
+        .header-brand { display: flex; align-items: center; gap: 15px; }
+        .header-brand img { height: 50px; }
+
+        nav { background: var(--bg-panel); border-right: 1px solid var(--border); padding: 20px 0; display: flex; flex-direction: column; }
+        .nav-item { padding: 15px 30px; cursor: pointer; border-left: 4px solid transparent; font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        .nav-item:hover { background: #111827; color: #fff; }
+        .nav-item.active { background: #111827; color: var(--gold); border-left-color: var(--gold); font-weight: bold; }
+
+        main { padding: 30px; overflow-y: auto; background: rgba(0,0,0,0.2); }
+        .doc-page { background: #fff; color: #1f2937; padding: 50px; box-shadow: 10px 10px 0 #000; margin-bottom: 30px; position: relative; border-left: 5px solid var(--gold); }
+        .stamp { position: absolute; top: 30px; right: 30px; border: 3px solid var(--accent-red); color: var(--accent-red); padding: 5px 15px; font-weight: bold; text-transform: uppercase; transform: rotate(5deg); font-size: 0.9rem; }
+
+        /* ASIDE / CHAT */
+        aside { background: #000; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .aside-title { background: #0a0d14; border-bottom: 1px solid var(--gold); color: var(--gold); padding: 12px; font-weight: bold; font-size: 0.7rem; text-align: center; text-transform: uppercase; }
+        .chat-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg-line { padding: 10px; border-left: 2px solid #374151; font-size: 0.8rem; background: rgba(255,255,255,0.02); }
+        .msg-line b { color: var(--gold); display: block; font-size: 0.65rem; margin-bottom: 4px; text-transform: uppercase; }
+        .msg-line.high-priority { border-left-color: var(--accent-red); background: rgba(142, 27, 27, 0.08); }
+
+        .chat-input-box { padding: 15px; border-top: 1px solid var(--border); display: flex; align-items: center; }
+        .chat-input-box input { flex: 1; background: transparent; border: none; color: #fff; outline: none; font-family: 'Courier New', monospace; font-size: 0.85rem; }
+
+        /* STAFF TABLE */
+        .staff-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .staff-table th { background: #eee; padding: 10px; text-align: left; border-bottom: 2px solid #000; }
+        .staff-table td { padding: 10px; border-bottom: 1px solid #ddd; }
+
+        .redacted { background: #000; color: #000; transition: 0.2s; cursor: help; padding: 0 2px; }
+        .redacted:hover { background: transparent; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; display: none; align-items: center; justify-content: center; }
+        .modal-body { background: var(--bg-panel); border: 1px solid var(--gold); padding: 35px; width: 550px; }
+    </style>
+</head>
+<body>
+
+    <div class="grid-overlay"></div>
+
+    <!-- GATE -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Emblem_of_the_Investigative_Committee_of_Russia.svg/1200px-Emblem_of_the_Investigative_Committee_of_Russia.svg.png" class="main-logo">
+            <h2 style="color:var(--gold); margin:0 0 5px 0; letter-spacing:2px;">АСО «КОНТУР-С»</h2>
+            <p style="font-size:0.6rem; color:#6b7280; margin-bottom:25px; text-transform:uppercase; letter-spacing:1px;">СУ СК РОССИЙСКОЙ ФЕДЕРАЦИИ</p>
+            
+            <div id="view-login">
+                <input type="text" id="log-fio" class="field" placeholder="ФИО СОТРУДНИКА">
+                <input type="password" id="log-pass" class="field" placeholder="КЛЮЧ ДОСТУПА">
+                <button class="btn-main" onclick="sysLogin()">АВТОРИЗАЦИЯ В СЕТИ</button>
+                <button style="background:none; border:none; color:var(--gold); font-size:0.7rem; margin-top:20px; cursor:pointer; text-decoration:underline;" onclick="toggleGate(true)">Регистрация нового узла связи</button>
+            </div>
+
+            <div id="view-reg" style="display:none;">
+                <input type="text" id="reg-fio" class="field" placeholder="ПОЛНОЕ ФИО">
+                <input type="text" id="reg-rank" class="field" placeholder="СПЕЦИАЛЬНОЕ ЗВАНИЕ (напр. Полковник юстиции)">
+                <input type="text" id="reg-pos" class="field" placeholder="ДОЛЖНОСТЬ (напр. Следователь по ОВД)">
+                <input type="text" id="reg-dept" class="field" placeholder="ОТДЕЛ (напр. Первый следственный отдел)">
+                <input type="password" id="reg-pass" class="field" placeholder="ПАРОЛЬ">
+                <button class="btn-main" onclick="sysRegister()">СОЗДАТЬ УЧЕТНУЮ ЗАПИСЬ</button>
+                <button style="background:none; border:none; color:#666; font-size:0.7rem; margin-top:15px; cursor:pointer;" onclick="toggleGate(false)">Назад</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN UI -->
+    <div id="app-shell">
+        <header>
+            <div class="header-brand">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Emblem_of_the_Investigative_Committee_of_Russia.svg/1200px-Emblem_of_the_Investigative_Committee_of_Russia.svg.png">
+                <div>
+                    <div style="font-weight:bold; color:var(--gold); font-size:0.9rem; letter-spacing:1px;">СЛЕДСТВЕННЫЙ КОМИТЕТ РОССИИ</div>
+                    <div style="font-size:0.55rem; opacity:0.6;">АВТОМАТИЗИРОВАННАЯ СИСТЕМА «КОНТУР-С» | ВЕРСИЯ 0.9.8-PRO</div>
+                </div>
+            </div>
+            <div style="text-align:right">
+                <div id="clock" style="font-size:1.1rem; font-weight:bold; font-family:monospace; color:#fff;">00:00:00</div>
+                <div id="user-display" style="font-size:0.6rem; color:var(--gold); text-transform:uppercase;">ЗАГРУЗКА...</div>
+            </div>
+        </header>
+
+        <nav>
+            <div class="nav-item active" onclick="navigate('home')">ЛИЧНОЕ ДЕЛО</div>
+            <div class="nav-item" onclick="navigate('cases')">РЕЕСТР УГОЛОВНЫХ ДЕЛ</div>
+            <div class="nav-item" onclick="navigate('staff')">ЛИЧНЫЙ СОСТАВ</div>
+            <div class="nav-item" onclick="navigate('ekc')">ЭКСПЕРТИЗА (ЭКЦ)</div>
+            <div class="nav-item" onclick="navigate('data')">ПРОТОКОЛ ОБМЕНА</div>
+            <div class="nav-item" style="margin-top:auto; color:var(--accent-red); border:1px solid rgba(142,27,27,0.3); margin: 0 10px; text-align:center;" onclick="location.reload()">ВЫХОД</div>
+        </nav>
+
+        <main id="main-viewport"></main>
+
+        <aside>
+            <div class="aside-title">КАНАЛ ЦЕНТРАЛЬНОГО АППАРАТА</div>
+            <div class="chat-area" id="msg-stream">
+                <div class="msg-line high-priority">
+                    <b>БАСТРЫКИН А.И.</b>
+                    Александр Владимирович, материалы по последнему делу в <span class="redacted">████████</span> должны быть представлены в кратчайшие сроки.
+                </div>
+            </div>
+            <div class="chat-input-box">
+                <span style="color:var(--gold); margin-right:10px; font-weight:bold;">></span>
+                <input type="text" id="chat-msg-field" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') pushMsg()">
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODALS -->
+    <div id="m-case" class="modal-overlay">
+        <div class="modal-body">
+            <h3 style="color:var(--gold); margin-top:0; text-transform:uppercase;">Регистрация уголовного дела</h3>
+            <input type="text" id="new-c-num" class="field" placeholder="НОМЕР ДЕЛА (напр. 154-С/2026)">
+            <input type="text" id="new-c-obj" class="field" placeholder="ФИГУРАНТ / ОБЪЕКТ РАССЛЕДОВАНИЯ">
+            <textarea id="new-c-desc" class="field" style="height:120px;" placeholder="КРАТКАЯ ФАБУЛА ДЕЛА"></textarea>
+            <button class="btn-main" onclick="commitCase()">ВНЕСТИ В ЕДИНЫЙ РЕЕСТР</button>
+            <button class="btn-main" style="background:#222; color:#fff; margin-top:10px;" onclick="hideModals()">ОТМЕНА</button>
+        </div>
+    </div>
+
+    <script>
+        let DATA = JSON.parse(localStorage.getItem('sk_kontur_pro_v1')) || {
+            staff: [{ fio: "Красин Александр Владимирович", rank: "Полковник юстиции", pos: "Следователь по ОВД", dept: "Первый следственный отдел", pass: "1234" }],
+            cases: [{ num: "2026/001", obj: "Группа лиц", desc: "Хищение государственных средств в особо крупном размере.", author: "Красин А.В." }],
+            ekc: []
+        };
+
+        function save() { localStorage.setItem('sk_kontur_pro_v1', JSON.stringify(DATA)); }
+        let SessionUser = null;
+
+        function toggleGate(isReg) {
+            document.getElementById('view-login').style.display = isReg ? 'none' : 'block';
+            document.getElementById('view-reg').style.display = isReg ? 'block' : 'none';
+        }
+
+        function sysRegister() {
+            const f = document.getElementById('reg-fio').value, r = document.getElementById('reg-rank').value, 
+                  p = document.getElementById('reg-pos').value, d = document.getElementById('reg-dept').value, 
+                  pw = document.getElementById('reg-pass').value;
+            if(!f || !pw) return alert("Основные данные не заполнены.");
+            DATA.staff.push({ fio: f, rank: r, pos: p, dept: d, pass: pw });
+            save(); alert("Сотрудник зарегистрирован в базе АСО."); toggleGate(false);
+        }
+
+        function sysLogin() {
+            const f = document.getElementById('log-fio').value, p = document.getElementById('log-pass').value;
+            const u = DATA.staff.find(x => x.fio === f && x.pass === p);
+            if(u) {
+                SessionUser = u;
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-shell').style.display = 'grid';
+                document.getElementById('user-display').innerText = `${SessionUser.rank} ${SessionUser.fio}`;
+                runSystem();
+            } else alert("Отказ в авторизации: данные не найдены.");
+        }
+
+        function navigate(tab) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const vp = document.getElementById('main-viewport');
+            
+            if(tab === 'home') {
+                vp.innerHTML = `<div class="doc-page"><div class="stamp">СЛУЖЕБНОЕ</div><h2>АНКЕТА СОТРУДНИКА</h2><p><b>ФИО:</b> ${SessionUser.fio}</p><p><b>ЗВАНИЕ:</b> ${SessionUser.rank}</p><p><b>ДОЛЖНОСТЬ:</b> ${SessionUser.pos}</p><p><b>ОТДЕЛ:</b> ${SessionUser.dept}</p><hr style="border:0; border-top:1px solid #ddd; margin:30px 0;"><p>Статус в системе АСО «КОНТУР-С»: <b>Активен</b>. Уровень доступа: <b>Высокий</b>. Все действия логируются в центральном управлении.</p></div>`;
+            } else if(tab === 'cases') {
+                let h = `<div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;"><h2>РЕЕСТР УГОЛОВНЫХ ДЕЛ</h2><button class="btn-main" style="width:auto; padding:8px 25px;" onclick="openCaseModal()">+ ЗАРЕГИСТРИРОВАТЬ ДЕЛО</button></div>`;
+                DATA.cases.forEach(c => {
+                    h += `<div class="doc-page" style="padding:35px; margin-bottom:20px;"><div style="border-bottom:1px solid #eee; display:flex; justify-content:space-between; margin-bottom:15px; padding-bottom:5px; font-family:monospace; font-size:0.8rem;"><b>УГОЛОВНОЕ ДЕЛО № ${c.num}</b><span>Следователь: ${c.author}</span></div><h4 style="margin:10px 0; color:var(--accent-red);">ФИГУРАНТ: ${c.obj}</h4><p style="font-size:0.95rem; color:#333;">${c.desc}</p></div>`;
+                });
+                vp.innerHTML = h;
+            } else if(tab === 'staff') {
+                let h = `<h2>РЕЕСТР ЛИЧНОГО СОСТАВА</h2><div class="doc-page"><table class="staff-table"><thead><tr><th>ФИО</th><th>ЗВАНИЕ</th><th>ДОЛЖНОСТЬ</th><th>ПОДРАЗДЕЛЕНИЕ</th></tr></thead><tbody>`;
+                DATA.staff.forEach(s => h += `<tr><td>${s.fio}</td><td>${s.rank}</td><td>${s.pos}</td><td>${s.dept}</td></tr>`);
+                vp.innerHTML = h + `</tbody></table></div>`;
+            } else if(tab === 'ekc') {
+                vp.innerHTML = `<div class="doc-page"><h2>ЭКСПЕРТНО-КРИМИНАЛИСТИЧЕСКИЙ ЦЕНТР</h2><p>Здесь вы можете отправить запрос на проведение экспертизы.</p><button class="btn-main" onclick="alert('Улики переданы на анализ в ЭКЦ. Ожидайте результат.')">ОТПРАВИТЬ УЛИКИ НА АНАЛИЗ</button><div style="margin-top:30px; border-top:1px solid #ddd; padding-top:20px;"><h4>ЖУРНАЛ ЭКСПЕРТИЗ:</h4><p style="font-size:0.8rem; color:#888;">Запросов не найдено.</p></div></div>`;
+            } else if(tab === 'data') {
+                vp.innerHTML = `<div class="doc-page"><h2>ПРОТОКОЛ ОБМЕНА ДАННЫМИ</h2><p>Экспорт/Импорт ведомственных реестров.</p><button class="btn-main" onclick="doExport()">ВЫГРУЗИТЬ БАЗУ (JSON)</button><div style="margin-top:30px; padding-top:20px; border-top:1px dashed #ccc;"><p>Загрузить полученную базу:</p><input type="file" id="fi" onchange="doImport()"></div></div>`;
+            }
+        }
+
+        function openCaseModal() { document.getElementById('m-case').style.display = 'flex'; }
+        function hideModals() { document.getElementById('m-case').style.display = 'none'; }
+        function commitCase() {
+            const n = document.getElementById('new-c-num').value, o = document.getElementById('new-c-obj').value, d = document.getElementById('new-c-desc').value;
+            if(!n) return;
+            DATA.cases.push({ num: n, obj: o, desc: d, author: SessionUser.fio });
+            save(); hideModals(); navigate('cases');
+        }
+
+        function pushMsg() {
+            const f = document.getElementById('chat-msg-field'); if(!f.value) return;
+            const l = document.createElement('div'); l.className = "msg-line"; l.innerHTML = `<b>${SessionUser.fio}</b>${f.value}`;
+            document.getElementById('msg-stream').appendChild(l); f.value = ""; document.getElementById('msg-stream').scrollTop = 99999;
+            setTimeout(() => {
+                const r = document.createElement('div'); r.className = "msg-line high-priority";
+                r.innerHTML = `<b>ПЕТРЕНКО С.Л.</b>Принято к рассмотрению. Ожидайте распоряжений.`;
+                document.getElementById('msg-stream').appendChild(r); document.getElementById('msg-stream').scrollTop = 99999;
+            }, 2500);
+        }
+
+        function doExport() {
+            const b = new Blob([JSON.stringify(DATA)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sk_database_v4.json'; a.click();
+        }
+
+        function doImport() {
+            const f = document.getElementById('fi').files[0];
+            const r = new FileReader();
+            r.onload = e => { DATA = JSON.parse(e.target.result); save(); alert("База АСО синхронизирована."); navigate('home'); };
+            r.readAsText(f);
+        }
+
+        function runSystem() {
+            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+            navigate('home');
+        }
+    </script>
+</body>
+</html>
