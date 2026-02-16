@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АИС «БАСТИОН-ГСУ» | Единый реестр</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-panel: #1f2937;
+            --primary: #2563eb;
+            --accent: #ef4444;
+            --text-main: #f3f4f6;
+            --text-mute: #9ca3af;
+            --border: #374151;
+            --success: #059669;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+        
+        /* LOGIN */
+        #login-screen { position: fixed; inset: 0; z-index: 9999; background: #0f172a; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; }
+        .login-card { background: #1e293b; border: 1px solid var(--border); width: 450px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border-top: 4px solid var(--primary); }
+        .input-f { width: 100%; background: #111827; border: 1px solid var(--border); color: white; padding: 12px; margin: 10px 0; font-family: 'Roboto Mono', monospace; }
+        .btn { width: 100%; padding: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        .btn-blue { background: var(--primary); color: white; } .btn-blue:hover { background: #1d4ed8; }
+        .btn-red { background: var(--accent); color: white; } .btn-red:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-mute); }
+
+        /* UI GRID */
+        #app { display: none; grid-template-columns: 260px 1fr; grid-template-rows: 60px 1fr; height: 100vh; }
+        
+        /* HEADER */
+        header { grid-column: 1 / 3; background: #111827; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); z-index: 10; }
+        .brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; color: var(--primary); }
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .badge-dsp { background: var(--accent); color: white; }
+
+        /* SIDEBAR */
+        aside { background: #1f2937; border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+        .nav-cat { padding: 20px 20px 5px; font-size: 0.7rem; text-transform: uppercase; color: var(--text-mute); font-weight: bold; letter-spacing: 0.5px; }
+        .nav-item { padding: 10px 20px; cursor: pointer; border-left: 3px solid transparent; font-size: 0.9rem; color: #d1d5db; display: flex; align-items: center; gap: 10px; }
+        .nav-item:hover { background: #374151; color: white; }
+        .nav-item.active { background: #374151; border-left-color: var(--primary); color: white; }
+
+        /* MAIN */
+        main { padding: 30px; overflow-y: auto; position: relative; background: #111827; }
+        .card { background: #1f2937; border: 1px solid var(--border); padding: 25px; margin-bottom: 20px; border-radius: 4px; }
+        h2 { margin-top: 0; color: white; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.2rem; display: flex; justify-content: space-between; }
+        
+        /* TABLES */
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 12px; background: #111827; color: var(--text-mute); border-bottom: 2px solid var(--border); text-transform: uppercase; font-size: 0.75rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); color: #e5e7eb; }
+        tr:hover { background: #374151; }
+
+        /* MODAL */
+        .modal-wrap { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal { background: #1f2937; width: 600px; padding: 30px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        label { display: block; margin-top: 15px; margin-bottom: 5px; font-size: 0.8rem; color: var(--text-mute); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+    <div class="login-card">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Emblem_of_the_Investigative_Committee_of_Russia.svg/1200px-Emblem_of_the_Investigative_Committee_of_Russia.svg.png" width="80" style="margin-bottom:20px; opacity:0.8">
+        <h3>АИС «БАСТИОН-ГСУ»</h3>
+        <p style="color:var(--text-mute); font-size:0.8rem; margin-bottom:20px;">Вставьте смарт-карту или введите учетные данные</p>
+        <input id="l-user" class="input-f" placeholder="Идентификатор сотрудника">
+        <input id="l-pass" type="password" class="input-f" placeholder="Пароль доступа">
+        <button class="btn btn-blue" onclick="auth()">ВОЙТИ В СИСТЕМУ</button>
+        <p style="color:#ef4444; font-size:0.7rem; margin-top:20px;">ВНИМАНИЕ: Ведется логирование всех действий (Ст. 272 УК РФ)</p>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+    <header>
+        <div class="brand">
+            <span style="font-size:1.5rem">🛡</span> ГЛАВНОЕ СЛЕДСТВЕННОЕ УПРАВЛЕНИЕ <span class="badge badge-dsp">ДСП</span>
+        </div>
+        <div style="text-align:right">
+            <div id="u-name" style="font-weight:bold; font-size:0.9rem;"></div>
+            <div id="u-rank" style="font-size:0.75rem; color:var(--text-mute);"></div>
+        </div>
+    </header>
+
+    <aside>
+        <div class="nav-cat">ОПЕРАТИВНОЕ УПРАВЛЕНИЕ</div>
+        <div class="nav-item active" onclick="go('dash')">📊 ГЛАВНАЯ (Сводка)</div>
+        <div class="nav-item" onclick="go('kusp')">📥 КАНЦЕЛЯРИЯ (КУСП)</div>
+        <div class="nav-item" onclick="go('cases')">📁 СЛЕДСТВИЕ (Дела)</div>
+        <div class="nav-item" onclick="go('wanted')">🕵️ РОЗЫСК (База)</div>
+        <div class="nav-item" onclick="go('chat')">💬 СПЕЦСВЯЗЬ</div>
+
+        <div class="nav-cat">АДМИНИСТРИРОВАНИЕ</div>
+        <div class="nav-item" id="adm-btn" onclick="go('hr')" style="color:#fbbf24; display:none;">👑 УПРАВЛЕНИЕ КАДРОВ</div>
+        <div class="nav-item" onclick="go('armory')">🔫 АРСЕНАЛ (КХО)</div>
+        <div class="nav-item" onclick="go('garage')">🚔 АВТОХОЗЯЙСТВО</div>
+        
+        <div class="nav-cat">ВСПОМОГАТЕЛЬНЫЕ</div>
+        <div class="nav-item" onclick="go('experts')">🔬 ЭКЦ (Экспертизы)</div>
+        <div class="nav-item" onclick="go('sizo')">⚖️ СИЗО / ИВС</div>
+        <div class="nav-item" onclick="go('archive')">🗄 АРХИВ ДЕЛ</div>
+        <div class="nav-item" onclick="go('laws')">📖 СПРАВОЧНИК (НПА)</div>
+
+        <div style="margin-top:auto; padding:20px;">
+            <button class="btn btn-red" onclick="location.reload()">ЗАВЕРШИТЬ СЕАНС</button>
+        </div>
+    </aside>
+
+    <main id="view"></main>
+</div>
+
+<!-- MODAL: EDIT USER -->
+<div id="m-user" class="modal-wrap">
+    <div class="modal">
+        <h3 style="color:white; border-bottom:1px solid #333; padding-bottom:10px;">ЛИЧНОЕ ДЕЛО СОТРУДНИКА</h3>
+        <input type="hidden" id="e-id">
+        <label>ФИО</label><input id="e-fio" class="input-f">
+        <label>Специальное звание</label>
+        <select id="e-rank" class="input-f">
+            <option>Генерал юстиции РФ</option><option>Генерал-полковник</option><option>Генерал-лейтенант</option><option>Генерал-майор</option>
+            <option>Полковник юстиции</option><option>Подполковник юстиции</option><option>Майор юстиции</option><option>Капитан юстиции</option><option>Лейтенант юстиции</option>
+        </select>
+        <label>Должность</label><input id="e-pos" class="input-f">
+        <label>Награды (через запятую)</label><textarea id="e-medals" class="input-f" rows="3"></textarea>
+        <label>Уровень доступа (1-След, 2-Нач, 3-Генерал)</label><input id="e-role" type="number" class="input-f">
+        
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn btn-blue" onclick="saveUser()">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+            <button class="btn btn-outline" onclick="document.getElementById('m-user').style.display='none'">ОТМЕНА</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DATABASE ---
+    const DB_KEY = 'ais_bastion_v9';
+    const INIT_DB = {
+        users: [
+            { id: 1, fio: "Красин Александр Владимирович", rank: "Генерал юстиции РФ", pos: "Руководитель ГСУ", role: 3, pass: "Красин222", medals: "Герой РФ, За заслуги перед Отечеством" },
+            { id: 2, fio: "Петров Иван Сергеевич", rank: "Лейтенант юстиции", pos: "Следователь", role: 1, pass: "123", medals: "" }
+        ],
+        cases: [ { num: "159-24", art: "105 УК РФ", desc: "Убийство на ул. Ленина", invest: "Красин А.В.", status: "В производстве" } ],
+        kusp: [ { id: 1001, text: "Сообщение о краже имущества", date: "16.02.2026", status: "Принято" } ],
+        wanted: [ { name: "Сидоров А.А.", reason: "Ст. 159 ч.4", status: "Федеральный розыск" } ],
+        chat: [ { user: "Дежурный", text: "Сводка за сутки загружена.", time: "08:00" } ]
+    };
+
+    let DB = JSON.parse(localStorage.getItem(DB_KEY)) || INIT_DB;
+    let Me = null;
+
+    function save() { localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+    
+    // --- AUTH ---
+    function auth() {
+        const u = document.getElementById('l-user').value.trim();
+        const p = document.getElementById('l-pass').value.trim();
+        const user = DB.users.find(x => x.fio === u && x.pass === p);
+        if(user) {
+            Me = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'grid';
+            document.getElementById('u-name').innerText = Me.fio;
+            document.getElementById('u-rank').innerText = Me.rank;
+            if(Me.role >= 3) document.getElementById('adm-btn').style.display = 'flex';
+            go('dash');
+        } else alert("ОШИБКА АВТОРИЗАЦИИ: Неверные данные или токен.");
+    }
+
+    // --- NAVIGATION ---
+    function go(page) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        const v = document.getElementById('view');
+        
+        if(page === 'dash') {
+            v.innerHTML = `
+            <div class="card">
+                <h2>ОПЕРАТИВНАЯ СВОДКА <span style="font-size:0.8rem; color:#6b7280">${new Date().toLocaleDateString()}</span></h2>
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px;">
+                    <div style="background:#111827; padding:15px; border-left:4px solid var(--primary);">
+                        <div style="color:#9ca3af; font-size:0.8rem">В ПРОИЗВОДСТВЕ</div>
+                        <div style="font-size:1.5rem; font-weight:bold">${DB.cases.length}</div>
+                    </div>
+                    <div style="background:#111827; padding:15px; border-left:4px solid var(--accent);">
+                        <div style="color:#9ca3af; font-size:0.8rem">КРИМИНАЛ (КУСП)</div>
+                        <div style="font-size:1.5rem; font-weight:bold">${DB.kusp.length}</div>
+                    </div>
+                    <div style="background:#111827; padding:15px; border-left:4px solid #059669;">
+                        <div style="color:#9ca3af; font-size:0.8rem">ЛИЧНЫЙ СОСТАВ</div>
+                        <div style="font-size:1.5rem; font-weight:bold">${DB.users.length}</div>
+                    </div>
+                    <div style="background:#111827; padding:15px; border-left:4px solid #fbbf24;">
+                        <div style="color:#9ca3af; font-size:0.8rem">В РОЗЫСКЕ</div>
+                        <div style="font-size:1.5rem; font-weight:bold">${DB.wanted.length}</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+        else if(page === 'hr') {
+            if(Me.role < 3) return v.innerHTML = '<div class="card"><h2>ДОСТУП ЗАПРЕЩЕН</h2></div>';
+            let h = `<div class="card">
+                <h2>УПРАВЛЕНИЕ КАДРАМИ <button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="newUser()">+ НАЗНАЧИТЬ</button></h2>
+                <table><thead><tr><th>ЗВАНИЕ</th><th>СОТРУДНИК</th><th>ДОЛЖНОСТЬ</th><th>НАГРАДЫ</th><th>ДЕЙСТВИЯ</th></tr></thead><tbody>`;
+            DB.users.forEach(u => {
+                h += `<tr>
+                    <td style="color:#fbbf24">${u.rank}</td>
+                    <td><b>${u.fio}</b></td>
+                    <td>${u.pos}</td>
+                    <td style="font-size:0.7rem">${u.medals || '-'}</td>
+                    <td>
+                        <button class="btn btn-outline" style="padding:4px 8px;" onclick="editUser(${u.id})">ИЗМ.</button>
+                        ${u.id !== Me.id ? `<button class="btn btn-red" style="padding:4px 8px;" onclick="delUser(${u.id})">УВОЛ.</button>` : ''}
+                    </td>
+                </tr>`;
+            });
+            v.innerHTML = h + `</tbody></table></div>`;
+        }
+        else if(page === 'cases') {
+            v.innerHTML = `<div class="card"><h2>УГОЛОВНЫЕ ДЕЛА <button class="btn btn-blue" style="width:auto; padding:5px 15px" onclick="addCase()">+ ВОЗБУДИТЬ</button></h2>
+            <table><thead><tr><th>№ ДЕЛА</th><th>СТАТЬЯ</th><th>ФАБУЛА</th><th>СЛЕДОВАТЕЛЬ</th><th>СТАТУС</th></tr></thead>
+            <tbody>${DB.cases.map(c => `<tr><td>${c.num}</td><td>${c.art}</td><td>${c.desc}</td><td>${c.invest}</td><td><span class="badge badge-dsp">${c.status}</span></td></tr>`).join('')}</tbody></table></div>`;
+        }
+        else if(page === 'chat') {
+             v.innerHTML = `<div class="card"><h2>СПЕЦСВЯЗЬ (ЗАКРЫТЫЙ КАНАЛ)</h2>
+             <div style="height:300px; overflow-y:auto; background:#111827; padding:10px; border:1px solid #374151; margin-bottom:10px;">
+                ${DB.chat.map(m => `<div style="margin-bottom:5px;"><span style="color:#2563eb">[${m.time}] ${m.user}:</span> ${m.text}</div>`).join('')}
+             </div>
+             <div style="display:flex; gap:10px;"><input id="chat-msg" class="input-f" style="margin:0"><button class="btn btn-blue" style="width:100px" onclick="sendMsg()">ОТПР.</button></div>
+             </div>`;
+        }
+        else if(page === 'wanted') {
+             v.innerHTML = `<div class="card"><h2>ФЕДЕРАЛЬНЫЙ РОЗЫСК <button class="btn btn-red" style="width:auto; padding:5px 15px" onclick="addWanted()">+ ОБЪЯВИТЬ</button></h2>
+             <table><thead><tr><th>ФИО</th><th>ПРИЧИНА РОЗЫСКА</th><th>СТАТУС</th></tr></thead>
+             <tbody>${DB.wanted.map(w => `<tr><td><b>${w.name}</b></td><td>${w.reason}</td><td><span class="badge badge-dsp">${w.status}</span></td></tr>`).join('')}</tbody></table></div>`;
+        }
+        else {
+            // Placeholder for other 8 sections
+            const titles = { 'kusp': 'КАНЦЕЛЯРИЯ (КУСП)', 'armory': 'КОМНАТА ХРАНЕНИЯ ОРУЖИЯ', 'garage': 'АВТОХОЗЯЙСТВО', 'experts': 'ЭКСПЕРТНО-КРИМИНАЛИСТИЧЕСКИЙ ЦЕНТР', 'sizo': 'ИЗОЛЯТОР ВРЕМЕННОГО СОДЕРЖАНИЯ', 'archive': 'АРХИВ УГОЛОВНЫХ ДЕЛ', 'laws': 'НОРМАТИВНО-ПРАВОВАЯ БАЗА' };
+            v.innerHTML = `<div class="card"><h2>${titles[page] || 'РАЗДЕЛ'}</h2><p style="color:#9ca3af">Доступ к разделу активен. База данных синхронизирована.</p><br><div style="padding:20px; border:1px dashed #374151; text-align:center; color:#4b5563">НЕТ АКТИВНЫХ ЗАПИСЕЙ ЗА ТЕКУЩИЕ СУТКИ</div></div>`;
+        }
+    }
+
+    // --- LOGIC ---
+    function newUser() {
+        const fio = prompt("ФИО сотрудника:");
+        const pass = prompt("Пароль доступа:");
+        if(fio && pass) { DB.users.push({id:Date.now(), fio, pass, rank:"Лейтенант юстиции", pos:"Следователь", role:1}); save(); go('hr'); }
+    }
+    
+    function editUser(id) {
+        const u = DB.users.find(x => x.id === id);
+        if(!u) return;
+        document.getElementById('e-id').value = u.id;
+        document.getElementById('e-fio').value = u.fio;
+        document.getElementById('e-rank').value = u.rank;
+        document.getElementById('e-pos').value = u.pos;
+        document.getElementById('e-medals').value = u.medals || '';
+        document.getElementById('e-role').value = u.role;
+        document.getElementById('m-user').style.display = 'flex';
+    }
+
+    function saveUser() {
+        const id = parseInt(document.getElementById('e-id').value);
+        const u = DB.users.find(x => x.id === id);
+        if(u) {
+            u.fio = document.getElementById('e-fio').value;
+            u.rank = document.getElementById('e-rank').value;
+            u.pos = document.getElementById('e-pos').value;
+            u.medals = document.getElementById('e-medals').value;
+            u.role = parseInt(document.getElementById('e-role').value);
+            save(); document.getElementById('m-user').style.display = 'none'; go('hr');
+        }
+    }
+
+    function delUser(id) { if(confirm("Подтвердите приказ об увольнении.")) { DB.users = DB.users.filter(x => x.id !== id); save(); go('hr'); } }
+    
+    function addCase() {
+        const art = prompt("Статья УК РФ:");
+        if(art) { DB.cases.push({num: Math.floor(Math.random()*1000)+"-26", art, desc:"Возбуждено по рапорту", invest: Me.fio, status:"В производстве"}); save(); go('cases'); }
+    }
+    
+    function addWanted() {
+        const n = prompt("ФИО подозреваемого:");
+        if(n) { DB.wanted.push({name:n, reason:"Устанавливается", status:"В розыске"}); save(); go('wanted'); }
+    }
+    
+    function sendMsg() {
+        const t = document.getElementById('chat-msg').value;
+        if(t) { DB.chat.push({user:Me.fio, text:t, time: new Date().toLocaleTimeString()}); save(); document.getElementById('chat-msg').value=''; go('chat'); }
+    }
+
+</script>
+</body>
+</html>
